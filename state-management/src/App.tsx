@@ -1,7 +1,8 @@
-import { PokemonProvider, usePokemon } from "./store";
+import { usePokemon } from "./store";
 
 function SearchBox() {
-  const { search, setSearch } = usePokemon();
+  const search = usePokemon((state) => state.search);
+  const setSearch = usePokemon((state) => state.setSearch);
   return (
     <input
       className="mt-3 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-800 focus:ring-indigo-800 sm:text-lg p-2"
@@ -13,10 +14,10 @@ function SearchBox() {
 }
 
 const PokemonList = () => {
-  const { pokemon } = usePokemon();
+  const pokemeon = usePokemon((state) => state.pokemon);
   return (
     <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-3">
-      {pokemon.map((p) => (
+      {pokemeon.map((p) => (
         <li
           key={p.id}
           className="col-span-1 flex flex-col text-center bg-white rounded-lg shadow divide-y divide-gray-200"
@@ -39,12 +40,10 @@ function App() {
   //const { pokemon } = usePokemon();
   return (
     <>
-      <PokemonProvider>
-        <div className="mx-auto max-w-3xl">
-          <SearchBox />
-          <PokemonList />
-        </div>
-      </PokemonProvider>
+      <div className="mx-auto max-w-3xl">
+        <SearchBox />
+        <PokemonList />
+      </div>
     </>
   );
 }
