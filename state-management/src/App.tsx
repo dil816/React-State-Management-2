@@ -1,19 +1,26 @@
-import { PokemonProvider, usePokemon } from "./store";
+import { useSelector, useDispatch, Provider } from "react-redux";
+
+import { store, selectSearch, setSearch, selectPokemon } from "./store";
 
 function SearchBox() {
-  const { search, setSearch } = usePokemon();
+  const search = useSelector(selectSearch);
+  const dispatch = useDispatch();
+
   return (
     <input
       className="mt-3 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-800 focus:ring-indigo-800 sm:text-lg p-2"
       placeholder="Search"
       value={search}
-      onChange={(e) => setSearch(e.target.value)}
+      onChange={(event) => {
+        dispatch(setSearch(event.target.value));
+      }}
     />
   );
 }
 
 const PokemonList = () => {
-  const { pokemon } = usePokemon();
+  const pokemon = useSelector(selectPokemon);
+
   return (
     <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-3">
       {pokemon.map((p) => (
@@ -36,16 +43,13 @@ const PokemonList = () => {
 };
 
 function App() {
-  //const { pokemon } = usePokemon();
   return (
-    <>
-      <PokemonProvider>
-        <div className="mx-auto max-w-3xl">
-          <SearchBox />
-          <PokemonList />
-        </div>
-      </PokemonProvider>
-    </>
+    <Provider store={store}>
+      <div className="mx-auto max-w-3xl">
+        <SearchBox />
+        <PokemonList />
+      </div>
+    </Provider>
   );
 }
 

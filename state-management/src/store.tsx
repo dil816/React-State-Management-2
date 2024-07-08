@@ -1,101 +1,71 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-} from "react";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {
+  createSlice,
+  configureStore,
+  type PayloadAction,
+  createSelector,
+} from "@reduxjs/toolkit";
 
-interface Pokemon {
+export interface Pokemon {
   id: number;
   name: string;
   type: string[];
   hp: number;
   attack: number;
-  defence: number;
+  defense: number;
   special_attack: number;
-  special_defence: number;
+  special_defense: number;
   speed: number;
 }
 
-function usePokemonSource(): {
-  pokemon: Pokemon[];
-  search: string;
-  setSearch: (search: string) => void; //return nothin thst why use void
-} {
-  //const [pokemon, setPokemon] = useState<Pokemon[]>([]);
-  //const [search, setSearch] = useState("");
+const pokemonApi = createApi({
+  reducerPath: "pokemonApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "/" }),
+  endpoints: (builder) => ({
+    getPokemon: builder.query<Pokemon[], undefined>({
+      query: () => "pokemon.json",
+    }),
+  }),
+});
 
-  type PokemonState = {
-    pokemon: Pokemon[];
-    search: string;
-  };
+export const usePokemonQuery = pokemonApi.endpoints.getPokemon.useQuery;
 
-  type PokemonAction =
-    | { type: "setPokemon"; payload: Pokemon[] }
-    | { type: "setSearch"; payload: string };
-  const [{ pokemon, search }, dispatch] = useReducer(
-    (state: PokemonState, action: PokemonAction) => {
-      switch (action.type) {
-        case "setPokemon":
-          return { ...state, pokemon: action.payload };
-        case "setSearch":
-          return { ...state, search: action.payload };
-      }
+const searchSlice = createSlice({
+  name: "search",
+  initialState: {
+    search: "",
+  },
+  reducers: {
+    setSearch: (state, action: PayloadAction<string>) => {
+      state.search = action.payload;
     },
-    {
-      pokemon: [],
-      search: "",
-    }
-  );
+  },
+});
 
-  useEffect(() => {
-    fetch("/pokemon.json")
-      .then((response) => response.json())
-      .then((data) =>
-        dispatch({
-          type: "setPokemon",
-          payload: data,
-        })
-      );
-  }, []);
+export const { setSearch } = searchSlice.actions;
 
-  const setSearch = useCallback((search: string) => {
-    dispatch({
-      type: "setSearch",
-      payload: search,
-    });
-  }, []);
+export const store = configureStore({
+  reducer: {
+    search: searchSlice.reducer,
+    pokemonApi: pokemonApi.reducer,
+  },
+});
 
-  const filteredPokemon = useMemo(() => {
-    return pokemon
-      .filter((p) => p.name.toLowerCase().includes(search))
-      .slice(0, 20);
-  }, [pokemon, search]);
+export type RootState = ReturnType<typeof store.getState>;
 
-  const sortedPokemon = useMemo(
-    () => [...filteredPokemon].sort((a, b) => a.name.localeCompare(b.name)),
-    [filteredPokemon]
-  );
+export const selectSearch = (state: RootState) => state.search.search;
 
-  return { pokemon: sortedPokemon, search, setSearch };
-}
+store.dispatch(pokemonApi.endpoints.getPokemon.initiate(undefined));
 
-const PokemonContext = createContext<ReturnType<typeof usePokemonSource>>(
-  {} as unknown as ReturnType<typeof usePokemonSource>
+export const selectPokemon = createSelector(
+  (state: RootState) =>
+    pokemonApi.endpoints.getPokemon.select(undefined)(state)?.data,
+  (state: RootState) => state.search.search,
+  (pokemon, search) =>
+    (pokemon || [])
+      .filter((pokemon) =>
+        pokemon.name.toLowerCase().includes(search.toLowerCase())
+      )
+      .slice(0, 10)
+      .sort((a, b) => a.name.localeCompare(b.name))
 );
-
-export function usePokemon() {
-  return useContext(PokemonContext);
-}
-
-export function PokemonProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <PokemonContext.Provider value={usePokemonSource()}>
-        {children}
-      </PokemonContext.Provider>
-    </>
-  );
-}
